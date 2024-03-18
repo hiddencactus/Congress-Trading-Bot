@@ -5,7 +5,7 @@ import math
 from scipy import stats #module for percentile calculations
 import xlsxwriter       #module for transferring data to excel spreadsheet
 from bs4 import BeautifulSoup
-from env_secrets import API_KEY, user, pwd, host, port, dbName, tableName, marketwatchEmail, marketwatchPassword
+from env_secrets import user, pwd, host, port, dbName, tableName, investopediaEmail, investopediaPassword
 from sqlalchemy import create_engine
 from datetime import date
 import json
@@ -76,26 +76,41 @@ dfExistingToday = dfExistingToday.drop(columns=['index'])
 failed = False
 print(dfExistingToday.equals(dfToday), "xddddddddddd") #if they are not equal, that means a new entry has been added.
 
-DEMODATA = [['AAPL', 'Sale (Full) $100,000-$250,000', 'Rick Scott', 'Mar. 15, 2024', 'Feb. 15, 2024', 'blah', '-']]
-dfNew = pd.DataFrame(DEMODATA, columns = table_titles)  #DEMODATA, 
+DEMODATA = ['AAPL', 'Sale (Full) $100,000-$250,000', 'Rick Scott', 'Mar. 15, 2024', 'Feb. 15, 2024', 'blah', '-']
+dfNew = pd.DataFrame(columns = table_titles)  #DEMODATA, 
 #print(dfNew)
 
 #print(dfToday.sort_values(by=dfToday.columns.tolist()).reset_index(drop=True).equals(dfExistingToday.sort_values(by=dfExistingToday.columns.tolist()).reset_index(drop=True)), "final fiaweijtowaeitjajo")
 
-#print(dfToday)
-#print(dfExistingToday)
-
+print(dfToday)
+print(dfExistingToday)
+cnt = 0
 #for some reason, quiver does not always maintain the same order, so you need to sort and then compare
-while(not dfToday.sort_values(by=dfToday.columns.tolist()).reset_index(drop=True).equals(dfExistingToday.sort_values(by=dfExistingToday.columns.tolist()).reset_index(drop=True))): #if not equal, keep removing the top row of dfToday and check
-    row1 = dfToday.iloc[1]
-    length = len(dfNew)
-    dfNew.loc[length] = row1 #appends 1 row from dfToday to dfNew
-    dfToday = dfToday.iloc[1:] #gives a df without the first row
-
-    #print(dfToday)
+#may need later: dfToday.sort_values(by=dfToday.columns.tolist()).reset_index(drop=True).equals(dfExistingToday.sort_values(by=dfExistingToday.columns.tolist()).reset_index(drop=True))
+# while(not dfToday.equals(dfExistingToday)): #if not equal, keep removing the top row of dfToday and check
+#     cnt+= 1
     
-    if(dfToday.empty):
-        raise Exception("There was a new entry, but something went wrong.") #if the entire dataframe is exhausted, raise error
+#     row1 = dfToday.iloc[-1]
+#     length = len(dfNew)
+#     dfNew.loc[length] = row1 #appends 1 row from dfToday to dfNew
+#     dfToday = dfToday[:-1] #gives a df without the last row
+
+#     if cnt == 1:
+#         print(dfToday)
+#         print(dfExistingToday)
+#     #print(dfToday)
+    
+#     if(dfToday.empty):
+#         raise Exception("There was a new entry, but something went wrong.") #if the entire dataframe is exhausted, raise error
+dfToday = dfToday.sort_values(by=dfToday.columns.tolist())
+dfExistingToday = dfExistingToday.sort_values(by=dfExistingToday.columns.tolist()).reset_index(drop=True)
+
+merged = dfToday.merge(dfExistingToday, on=list(dfToday.columns), how='outer', indicator=True)
+rows_only_in_dfToday = merged[merged['_merge'] == 'left_only'][dfToday.columns]
+
+dfNew = rows_only_in_dfToday
+dfNew.loc[len(dfNew.index)] = DEMODATA
+print(dfNew, "xddafadfdafasddddddddddddddddddddd")
 
 newStockTickers = []
 newStockPrices = []
@@ -111,5 +126,5 @@ for index, row in dfNew.iterrows(): #iterrows() is a generator that yields both 
 
 #------------------creating sql database ***SHOULD BE RESERVED FOR THE VERY END
 
-#df.to_sql(name=tableName, con=db_connection, if_exists='replace')     THIS CODE REPLACES ENTIRE DB WITH THE CONGRESS DATA.
+#df.to_sql(name=tableName, con=db_connection, if_exists='replace')     #THIS CODE REPLACES ENTIRE DB WITH THE CONGRESS DATA.
 #uploading dataframe to table - For manual operation of the database, use sql commands on mysql
