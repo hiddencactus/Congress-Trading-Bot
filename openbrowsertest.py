@@ -91,9 +91,9 @@ class Browser:
         time.sleep(5)  
 
         today = date.today()
-        dataRequest = self.pgClient.get_aggs(ticker='NFLX',
+        dataRequest = self.pgClient.get_aggs(ticker=stock, #need to fix, shit api doesnt let you get latest price
                                              multiplier = 1,
-                                             timespan = 'second',
+                                             timespan = 'minute',
                                              from_ = today,
                                              to = today)
 
